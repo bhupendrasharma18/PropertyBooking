@@ -20,7 +20,13 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "config": {
+        "googleMaps": {
+          "apiKey": "GXH0lMzgbV7h7sm0nxf_rQmGOOYLq6o"
+        }
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.anonymous.PropertyBooking"
     },
     "web": {
       "favicon": "./assets/favicon.png"
