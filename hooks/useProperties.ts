@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api/client';
 
 export function useProperties() {
@@ -27,6 +27,20 @@ export function useBookings() {
     queryFn: async () => {
       const res = await api.get('/bookings');
       return res.data;
+    },
+  });
+}
+
+export function useCreateBooking() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (newBooking) => {
+      const res = await api.post('/bookings', newBooking);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['bookings']);
     },
   });
 }

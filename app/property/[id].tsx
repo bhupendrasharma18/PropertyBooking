@@ -1,4 +1,4 @@
-
+import React, { useState } from 'react';
 import { useLocalSearchParams, Stack } from 'expo-router';
 import {
   View,
@@ -7,15 +7,13 @@ import {
   Image,
   TouchableOpacity,
   Dimensions,
-  NativeScrollEvent,
-  NativeSyntheticEvent
 } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import api from '../../api/client';
 import tw from '../../twrnc';
 import { useBookingStore } from '../../store/bookingStore';
-import MapView, { Marker } from 'react-native-maps';
-import { useRef, useState } from 'react';
+import BookingModal from '../components/BookingModal';
+import PropertyMap from '../components/PropertyMap';
 
 const { width } = Dimensions.get('window');
 
@@ -31,14 +29,14 @@ export default function PropertyDetailScreen() {
 
   const bookings = useBookingStore(s => s.bookings);
   const addBooking = useBookingStore(s => s.addBooking);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const scrollRef = useRef<ScrollView>(null);
 
-  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const offsetX = event.nativeEvent.contentOffset.x;
-    const index = Math.round(offsetX / width);
-    setActiveIndex(index);
-  };
+  // Modal and date picker states
+  const [modalVisible, setModalVisible] = useState(false);
+  const [checkIn, setCheckIn] = useState<Date | null>(null);
+  const [checkOut, setCheckOut] = useState<Date | null>(null);
+  const [pickerMode, setPickerMode] = useState<'checkin' | 'checkout' | null>(null);
+  const [showPicker, setShowPicker] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   if (isLoading)
     return <Text style={tw`mt-4 text-center text-gray-600`}>Loading property details...</Text>;
@@ -48,113 +46,140 @@ export default function PropertyDetailScreen() {
   const { title, location, features, images, price } = property;
   const { coordinates } = location;
 
-  const alreadyBooked = bookings.some(
-    b => b.propertyId.toString() === property.id.toString()
+  const alreadyBooked = bookings.some(b => b.propertyId.toString() === property.id.toString());
+
+  // Open modal and start with check-in picker
+  const openBookingModal = () => {
+    setErrorMsg('');
+    setCheckIn(null);
+    setCheckOut(null);
+    setPickerMode(null);
+    setShowPicker(false);
+    setModalVisible(true);
+  };
+
+  // Confirm booking action
+  const confirmBooking = () => {
+    if (!checkIn || !checkOut) {
+      setErrorMsg('Please select both check-in and check-out dates');
+      return;
+    }
+
+    // addBooking({
+    //   id: Date.now().toString(),
+    //   propertyId: property.id.toString(),
+    //   userId: 'user1', // hardcoded or from auth
+    //   checkIn: checkIn.toISOString().split('T')[0],
+    //   checkOut: checkOut.toISOString().split('T')[0],
+    //   status: 'confirmed',
+    // });
+
+    setModalVisible(false);
+  };
+
+  const ImageCarousel = ({ images }) => (
+    <>
+      <ScrollView
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        style={{ width, height: 250 }}
+      >
+        {images?.map((img, idx) => (
+          <Image
+            key={idx}
+            source={{ uri: img }}
+            style={{ width, height: 250 }}
+            resizeMode="cover"
+          />
+        ))}
+      </ScrollView>
+
+      <View style={tw`flex-row justify-center mt-2`}>
+        {images?.map((_, idx) => (
+          <View
+            key={idx}
+            style={[
+              tw`w-2 h-2 rounded-full mx-1`,
+              { backgroundColor: idx === 0 ? '#4F46E5' : '#D1D5DB' },
+            ]}
+          />
+        ))}
+      </View>
+    </>
   );
 
-  const handleBooking = () => {
-    if (alreadyBooked) return;
-    addBooking({
-      id: Date.now(),
-      propertyId: property.id,
-      date: new Date().toISOString(),
-    });
-  };
+  const PropertyHeader = ({ title, location, price }) => (
+    <>
+      <Text style={tw`text-2xl font-bold text-gray-900`}>{title}</Text>
+      <Text style={tw`text-gray-600 mt-1`}>
+        {location.address}, {location.city}, {location.state}
+      </Text>
+      <Text style={tw`text-xl text-indigo-600 font-semibold mt-2`}>
+        ${price.toLocaleString()} / month
+      </Text>
+    </>
+  );
+
+  const FeaturesList = ({ features }) => (
+    <>
+      <Text style={tw`text-lg font-bold mt-6 mb-2`}>Features:</Text>
+      {features.map((feature, idx) => (
+        <Text key={idx} style={tw`text-gray-700 mb-1`}>
+          • {feature}
+        </Text>
+      ))}
+    </>
+  );
+
+  const BookingButton = ({ alreadyBooked, onPress }) => (
+    <TouchableOpacity
+      style={tw.style(
+        `py-3 rounded-lg mt-4`,
+        alreadyBooked ? `bg-gray-400` : `bg-indigo-600`
+      )}
+      disabled={alreadyBooked}
+      onPress={onPress}
+    >
+      <Text style={tw`text-white text-center text-lg font-semibold`}>
+        {alreadyBooked ? 'Already Booked' : 'Book this property'}
+      </Text>
+    </TouchableOpacity>
+  );
 
   return (
     <>
       <Stack.Screen options={{ title: 'Property Details', headerShown: true }} />
       <ScrollView style={tw`flex-1 bg-white`}>
-        {/* Image carousel with pagination */}
-        <View>
-          <ScrollView
-            ref={scrollRef}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onScroll={handleScroll}
-            scrollEventThrottle={16}
-          >
-            {images?.map((img, idx) => (
-              <Image
-                key={idx}
-                source={{ uri: img }}
-                style={{ width, height: 250 }}
-                resizeMode="cover"
-              />
-            ))}
-          </ScrollView>
+        <ImageCarousel images={images} />
 
-          {/* Pagination dots */}
-          <View style={tw`flex-row justify-center mt-2`}>
-            {images?.map((_, idx) => (
-              <View
-                key={idx}
-                style={[
-                  tw`w-2 h-2 rounded-full mx-1`,
-                  {
-                    backgroundColor: idx === activeIndex ? '#4F46E5' : '#D1D5DB',
-                  },
-                ]}
-              />
-            ))}
-          </View>
-        </View>
-
-        {/* Info container */}
         <View style={tw`p-4`}>
-          <Text style={tw`text-2xl font-bold text-gray-900`}>{title}</Text>
-          <Text style={tw`text-gray-600 mt-1`}>
-            {location.address}, {location.city}, {location.state}
-          </Text>
-
-          <Text style={tw`text-xl text-indigo-600 font-semibold mt-2`}>
-            ${price.toLocaleString()} / month
-          </Text>
-
-          {/* Features */}
-          <Text style={tw`text-lg font-bold mt-6 mb-2`}>Features:</Text>
-          {features.map((feature, idx) => (
-            <Text key={idx} style={tw`text-gray-700 mb-1`}>• {feature}</Text>
-          ))}
-
-          {/* Map */}
-          <Text style={tw`text-lg font-bold mt-6 mb-2`}>Location</Text>
-          <View style={tw`overflow-hidden rounded-lg mb-4`}>
-            <MapView
-              style={{ width: '100%', height: 200 }}
-              initialRegion={{
-                latitude: coordinates.latitude,
-                longitude: coordinates.longitude,
-                latitudeDelta: 0.01,
-                longitudeDelta: 0.01,
-              }}
-            >
-              <Marker
-                coordinate={{
-                  latitude: coordinates.latitude,
-                  longitude: coordinates.longitude,
-                }}
-                title={title}
-              />
-            </MapView>
-          </View>
-
-          {/* Booking button */}
-          <TouchableOpacity
-            style={tw.style(
-              `py-3 rounded-lg mt-4`,
-              alreadyBooked ? `bg-gray-400` : `bg-indigo-600`
-            )}
-            disabled={alreadyBooked}
-            onPress={handleBooking}
-          >
-            <Text style={tw`text-white text-center text-lg font-semibold`}>
-              {alreadyBooked ? 'Already Booked' : 'Book this property'}
-            </Text>
-          </TouchableOpacity>
+          <PropertyHeader title={title} location={location} price={price} />
+          <FeaturesList features={features} />
+          <PropertyMap coordinates={coordinates} title={title} />
+          <BookingButton alreadyBooked={alreadyBooked} onPress={openBookingModal} />
         </View>
       </ScrollView>
+
+      <BookingModal
+        modalState={{
+          modalVisible,
+          setModalVisible,
+          checkIn,
+          checkOut,
+          showPicker,
+          pickerMode,
+          errorMsg,
+          setPickerMode,
+          setShowPicker,
+          setCheckIn,
+          setCheckOut,
+          setErrorMsg,
+        }}
+        bookingActions={{
+          confirmBooking,
+        }}
+      />
     </>
   );
 }

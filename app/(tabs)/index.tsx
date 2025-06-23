@@ -32,6 +32,32 @@ export default function HomeScreen() {
     );
   });
 
+  const PropertyListItem = ({ item }: { item: any }) => {
+    return (
+      <Link href={`/property/${item.id}`} asChild>
+        <TouchableOpacity style={tw`mb-4 bg-white rounded-xl shadow-lg overflow-hidden`}>
+          <Image
+            source={{ uri: item.images?.[0] }}
+            style={tw`w-full h-48`}
+            resizeMode="cover"
+          />
+          <View style={tw`p-4`}>
+            <Text style={tw`text-xl font-semibold text-gray-800`}>
+              {item.title}
+            </Text>
+            <Text style={tw`text-sm text-gray-500 mt-1`}>
+              {item.location?.address}, {item.location?.city}, {item.location?.state}
+            </Text>
+            <Text style={tw`text-indigo-600 text-lg mt-2 font-bold`}>
+              ${item.price.toLocaleString()}
+            </Text>
+            <Text style={tw`text-sm text-blue-500 mt-1`}>View Details</Text>
+          </View>
+        </TouchableOpacity>
+      </Link>
+    );
+  };
+
   if (isLoading) {
     return (
       <View style={tw`flex-1 justify-center items-center`}>
@@ -65,29 +91,7 @@ export default function HomeScreen() {
           data={filtered}
           keyExtractor={item => item.id.toString()}
           contentContainerStyle={tw`px-4 pb-6`}
-          renderItem={({ item }) => (
-            <Link href={`/property/${item.id}`} asChild>
-              <TouchableOpacity style={tw`mb-4 bg-white rounded-xl shadow-lg overflow-hidden`}>
-                <Image
-                  source={{ uri: item.images?.[0] }}
-                  style={tw`w-full h-48`}
-                  resizeMode="cover"
-                />
-                <View style={tw`p-4`}>
-                  <Text style={tw`text-xl font-semibold text-gray-800`}>
-                    {item.title}
-                  </Text>
-                  <Text style={tw`text-sm text-gray-500 mt-1`}>
-                    {item.location?.address}, {item.location?.city}, {item.location?.state}
-                  </Text>
-                  <Text style={tw`text-indigo-600 text-lg mt-2 font-bold`}>
-                    ${item.price.toLocaleString()}
-                  </Text>
-                  <Text style={tw`text-sm text-blue-500 mt-1`}>View Details</Text>
-                </View>
-              </TouchableOpacity>
-            </Link>
-          )}
+          renderItem={({ item }) => <PropertyListItem item={item} />}
         />
       )}
     </View>
