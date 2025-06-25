@@ -1,8 +1,11 @@
 
 import { View, Text, FlatList, Image } from 'react-native';
+import { useEffect } from 'react';
 import tw from '../../twrnc';
 import { useProperties, useBookings } from '../../hooks/useProperties';
+import { useBookingStore } from '../../store/bookingStore';
 import moment from 'moment';
+import type { PropertyProps } from '../../types/booking';
 
 interface BookingListItemProps {
   item: any;
@@ -11,13 +14,21 @@ interface BookingListItemProps {
 
 export default function BookingsScreen() {
   const { data: bookings, isLoading: loadingBookings, error } = useBookings();
+  const setBookings = useBookingStore(s => s.setBookings);
   const { data: properties, isLoading: loadingProperties } = useProperties();
 
   const getPropertyById = (id: string) =>
-    properties?.find(p => p.id.toString() === id);
+    properties?.find((p: PropertyProps) => p.id.toString() === id);
 
   const isLoading = loadingBookings || loadingProperties;
 
+  useEffect(() => {
+    if (bookings && bookings.length > 0) {
+      setBookings(bookings);
+    }
+  }, [bookings]);
+
+  // List Item Component
   const BookingListItem: React.FC<BookingListItemProps> = ({ item, property }) => {
     const image = property?.images?.[0];
 

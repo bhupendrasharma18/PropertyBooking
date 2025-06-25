@@ -1,15 +1,11 @@
 import { create } from 'zustand';
-
-type Booking = {
-  id: number;
-  propertyId: number;
-  date: string;
-};
+import type { Booking } from '../types/booking';
 
 type BookingState = {
   bookings: Booking[];
   addBooking: (booking: Booking) => void;
-  removeBooking: (id: number) => void;
+  removeBooking: (id: string) => void;
+  setBookings: (bookings: Booking[]) => void;
 };
 
 export const useBookingStore = create<BookingState>((set) => ({
@@ -20,4 +16,5 @@ export const useBookingStore = create<BookingState>((set) => ({
     set((state) => ({
       bookings: state.bookings.filter((b) => b.id !== id),
     })),
+    setBookings: (bookings) => set(() => ({ bookings })),
 }));

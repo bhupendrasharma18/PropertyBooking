@@ -12,12 +12,13 @@ import {
 import { useProperties } from '../../hooks/useProperties';
 import tw from '../../twrnc';
 import { Link } from 'expo-router';
+import type { PropertyProps } from '../../types/booking';
 
 export default function HomeScreen() {
   const [search, setSearch] = useState('');
   const { data, isLoading, error } = useProperties();
 
-  const filtered = data?.filter(item => {
+  const filtered = data?.filter((item: PropertyProps) => {
     const name = item.title ?? '';
     const city = item.location?.city ?? '';
     const state = item.location?.state ?? '';
